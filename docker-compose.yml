@@ -1,0 +1,28 @@
+services:
+  app:
+    build: .
+    ports:
+      - "4000:4000"
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/eventflow
+      JWT_SECRET: replace-with-strong-random-secret
+      REDIS_URL: redis://redis:6379
+      STRIPE_SECRET_KEY: test
+  
+  postgres:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: eventflow
+    ports:
+      - "5432:5432"
+  
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
