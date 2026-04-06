@@ -1,8 +1,6 @@
 import "dotenv/config"
 import { prisma } from "../src/config/database"
-import { connectRedis, redis } from "../src/config/redis"
-import { orderQueue } from "../src/modules/order/order.queue"
-import { queueConnection } from "../src/config/queue"
+import { redis } from "../src/config/redis"
 
 async function cleanDatabase() {
     await prisma.order.deleteMany()
@@ -12,10 +10,6 @@ async function cleanDatabase() {
 }
 
 beforeAll(async () => {
-    if (!redis.isOpen) {
-        await connectRedis()
-    }
-
     await cleanDatabase()
     console.log("Test environment setup")
 })
@@ -27,7 +21,5 @@ afterAll(async () => {
         await redis.quit()
     }
 
-    await orderQueue.close()
-    await queueConnection.quit()
     await prisma.$disconnect()
 })
