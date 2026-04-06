@@ -31,7 +31,7 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/eventflow
-      REDIS_URL: redis://redis:6379
+      REDIS_URL: redis://localhost:6379
       JWT_SECRET: testsecret
       STRIPE_SECRET_KEY: test
       NODE_ENV: test

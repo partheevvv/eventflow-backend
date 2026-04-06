@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import { prisma } from "../../config/database";
 import { OrderStatus } from "../../generated/prisma";
 import { stripe } from "../../config/stripe";
-import { orderQueue } from "./order.queue";
 
 export async function stripeWebhook(req: Request, res: Response) {
     
@@ -86,6 +85,7 @@ export async function stripeWebhook(req: Request, res: Response) {
 
             })
             
+            const { orderQueue } = await import("./order.queue")
             await orderQueue.add("orderPaid", { orderId })
             
         } catch (error) {

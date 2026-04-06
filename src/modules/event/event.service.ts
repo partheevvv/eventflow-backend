@@ -4,6 +4,26 @@ import { EventRepository } from "./event.repository";
 import { CreateEventDTO } from "./event.validation";
 import { Prisma } from "../../generated/prisma";
 
+async function clearEventsCache() {
+    if (!redis.isOpen) {
+        return
+    }
+
+    const keys = await redis.keys("events:*")
+
+    if (keys.length > 0) {
+        await redis.del(keys)
+    }
+}
+
+async function clearEventByIdCache(id: string) {
+    if (!redis.isOpen) {
+        return
+    }
+
+    await redis.del(`event:${id}`)
+}
+
 export const EventService = {
      
     async createEvent(
@@ -17,11 +37,7 @@ export const EventService = {
             throw new ApiError(400, "Invalid date format")
         }
 
-        const keys = await redis.keys("events:*")
-
-        if (keys.length > 0) {
-            await redis.del(keys)
-        }
+        await clearEventsCache()
 
         return EventRepository.createEvent({
             title: data.title,
@@ -45,7 +61,9 @@ export const EventService = {
 
         console.log("Cache key:", cacheKey)
 
-        const cached = await redis.get(cacheKey)
+        const cached = redis.isOpen
+            ? await redis.get(cacheKey)
+            : null
 
         if (cached) {
             console.log("Cache HIT")
@@ -69,7 +87,9 @@ export const EventService = {
             data: events
         }
 
-        await redis.set(cacheKey, JSON.stringify(response), { EX: 60 })
+        if (redis.isOpen) {
+            await redis.set(cacheKey, JSON.stringify(response), { EX: 60 })
+        }
 
         return response
     },
@@ -78,7 +98,9 @@ export const EventService = {
 
         const cacheKey = `event:${id}`
         
-        const cached = await redis.get(cacheKey)
+        const cached = redis.isOpen
+            ? await redis.get(cacheKey)
+            : null
 
         if (cached) {
             return JSON.parse(cached)
@@ -90,7 +112,9 @@ export const EventService = {
             throw new ApiError(404, "Event not found")
         }
 
-        await redis.set(cacheKey, JSON.stringify(event), { EX: 60 })
+        if (redis.isOpen) {
+            await redis.set(cacheKey, JSON.stringify(event), { EX: 60 })
+        }
         
         return event
     },
@@ -127,13 +151,8 @@ export const EventService = {
 
         const updated = await EventRepository.updateEvent(id, updatedData)
 
-        const keys = await redis.keys("events:*")
-
-        if (keys.length > 0) {
-            await redis.del(keys)
-        }
-
-        await redis.del(`event:${id}`)
+        await clearEventsCache()
+        await clearEventByIdCache(id)
 
         return updated
     },
@@ -152,13 +171,8 @@ export const EventService = {
         
         await EventRepository.deleteEvent(id)
         
-        const keys = await redis.keys("events:*")
-
-        if (keys.length > 0) {
-            await redis.del(keys)
-        }
-
-        await redis.del(`event:${id}`)
+        await clearEventsCache()
+        await clearEventByIdCache(id)
         
         return { message: "Event deleted successfully" }
     }
