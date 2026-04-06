@@ -1,4 +1,4 @@
-# 🚀 EventFlow Backend
+# EventFlow Backend
 
 A **production-ready event management backend** built with modern backend technologies, featuring secure authentication, payment integration, caching, background jobs, and CI/CD.
 
